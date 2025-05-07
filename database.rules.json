@@ -1,0 +1,9 @@
+{
+  "rules": {
+    ".read": true,
+    "sensor_data": {
+      ".read": true,
+      ".write": "auth != null"
+    }
+  }
+} 
