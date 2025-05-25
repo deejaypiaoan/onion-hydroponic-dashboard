@@ -22,7 +22,11 @@
       <div class="container mx-auto px-4">
         <div class="flex justify-between items-center py-4">
           <div class="flex items-center space-x-4">
-            <img src="https://github.com/deejaypiaoan/onion-hydroponic-dashboard/blob/main/ispsc-logo.png?raw=true" alt="ISPC Logo" class="h-12 w-auto" />
+            <img
+              src="https://github.com/deejaypiaoan/onion-hydroponic-dashboard/blob/main/ispsc-logo.png?raw=true"
+              alt="ISPC Logo"
+              class="h-12 w-auto"
+            />
             <div class="text-base md:text-xl font-bold text-gray-800">
               Onion Hydroponic System
             </div>
@@ -118,6 +122,14 @@
         </div>
 
         <div class="bg-white rounded-lg shadow p-6">
+          <h2 class="text-xl font-semibold mb-4">Water Level</h2>
+          <div class="flex items-center justify-center">
+            <p class="text-4xl font-bold text-cyan-600" id="water_level">--%</p>
+            <span class="ml-2 text-2xl" id="water_level-arrow">-</span>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
           <h2 class="text-xl font-semibold mb-4">Motion</h2>
           <div class="flex items-center justify-center">
             <p class="text-4xl font-bold text-orange-600" id="motion_detected">
@@ -147,6 +159,10 @@
 
         <div class="bg-white rounded-lg shadow p-6">
           <div id="chart-soil-moisture" class="w-full h-80"></div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+          <div id="chart-water-level" class="w-full h-80"></div>
         </div>
       </div>
 
@@ -235,7 +251,11 @@
       <section id="about" class="py-16 bg-white mt-16">
         <div class="container mx-auto px-4">
           <div class="flex justify-center mb-8">
-            <img src="https://github.com/deejaypiaoan/onion-hydroponic-dashboard/blob/main/ispsc-logo.png?raw=true" alt="ISPC Logo" class="h-24 w-auto" />
+            <img
+              src="https://github.com/deejaypiaoan/onion-hydroponic-dashboard/blob/main/ispsc-logo.png?raw=true"
+              alt="ISPC Logo"
+              class="h-24 w-auto"
+            />
           </div>
           <h2 class="text-3xl font-bold text-center mb-12">About Us</h2>
           <div class="max-w-3xl mx-auto mb-12">
@@ -523,11 +543,68 @@
         ],
       });
 
+      var chartWL = new Highcharts.Chart({
+        chart: {
+          renderTo: "chart-water-level",
+          type: "spline",
+          animation: Highcharts.svg,
+          marginRight: 10,
+        },
+        title: {
+          text: "Water Level History",
+        },
+        xAxis: {
+          type: "datetime",
+          tickPixelInterval: 150,
+          crosshair: true,
+          labels: {
+            formatter: function () {
+              return Highcharts.dateFormat("%H:%M:%S", this.value);
+            },
+          },
+        },
+        yAxis: {
+          title: {
+            text: "Water Level (%)",
+          },
+          plotLines: [
+            {
+              value: 0,
+              width: 1,
+              color: "#808080",
+            },
+          ],
+        },
+        tooltip: {
+          formatter: function () {
+            return (
+              "<b>" +
+              this.series.name +
+              "</b><br/>" +
+              formatPhTime(new Date(this.x)) +
+              "<br/>" +
+              Highcharts.numberFormat(this.y, 2) +
+              "%"
+            );
+          },
+        },
+        legend: {
+          enabled: false,
+        },
+        series: [
+          {
+            name: "Water Level",
+            data: [],
+          },
+        ],
+      });
+
       // Store previous values
       let previousValues = {
         temperature: null,
         humidity: null,
         soil_moisture: null,
+        water_level: null,
         motion_detected: null,
         relay_state: null,
       };
@@ -643,6 +720,37 @@
               } else {
                 chartSM.series[0].addPoint(
                   [x, currentSoilMoisture],
+                  true,
+                  false,
+                  true
+                );
+              }
+            }
+          }
+
+          // Update water level
+          if (data.water_level !== undefined) {
+            const currentWaterLevel = parseFloat(data.water_level);
+            if (!isNaN(currentWaterLevel)) {
+              document.getElementById("water_level").textContent =
+                currentWaterLevel.toFixed(1) + "%";
+              updateArrow(
+                "water_level-arrow",
+                currentWaterLevel,
+                previousValues.water_level
+              );
+              previousValues.water_level = currentWaterLevel;
+
+              if (chartWL.series[0].data.length > 40) {
+                chartWL.series[0].addPoint(
+                  [x, currentWaterLevel],
+                  true,
+                  true,
+                  true
+                );
+              } else {
+                chartWL.series[0].addPoint(
+                  [x, currentWaterLevel],
                   true,
                   false,
                   true
